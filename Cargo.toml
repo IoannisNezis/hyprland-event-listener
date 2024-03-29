@@ -1,5 +1,5 @@
 [package]
-name = "eww_hypr_socket_listener"
+name = "hyprland_socket_listener"
 version = "0.1.0"
 edition = "2021"
 
@@ -7,4 +7,4 @@ edition = "2021"
 
 [dependencies]
 anyhow = "^1.0.42"
-nom = "7.1.3"
+clap = { version = "4.5.4", features = ["derive"] }

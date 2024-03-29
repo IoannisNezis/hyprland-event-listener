@@ -3,6 +3,18 @@ use std::env;
 use std::io::{prelude::*, BufReader};
 use std::os::unix::net::UnixStream;
 
+use clap::Parser;
+
+
+/// IPC eventlistner to record hyperland events for further processing
+#[derive(Parser)]
+#[command(version, about, long_about= None)]
+struct Cli {
+
+    /// Target hyprland-event to listen to
+    event: String,
+}
+
 #[derive(Debug)]
 struct Message {
     event: String,
@@ -10,6 +22,7 @@ struct Message {
 }
 
 fn read_message(input: String) -> anyhow::Result<Message> {
+
     let parts: Vec<&str> = input.split(">>").collect();
     if parts.len() != 2 {
         return Err(anyhow!("message does not comply to format: EVENT>>DATA"));
@@ -21,19 +34,18 @@ fn read_message(input: String) -> anyhow::Result<Message> {
 }
 
 fn main() -> anyhow::Result<()> {
-    let args: Vec<String> = env::args().collect();
-    if args.len() != 2 {
-        return Err(anyhow!("Invalid arguments, expected exactly one"));
-    }
+    let cli = Cli::parse();
+    let target_event = cli.event;
+
     let his = env::var("HYPRLAND_INSTANCE_SIGNATURE")
         .context("Environmenvariable not set: HYPRLAND_INSTANCE_SIGNATURE")?;
     let stream = UnixStream::connect(format!("/tmp/hypr/{}/.socket2.sock", his))
-        .context("Failed to connect to hypr-unix socket")?;
+        .context("Failed to connect to hyprland-unix socket")?;
     let reader = BufReader::new(stream);
     for line in reader.lines() {
         let line_str = line.context("Failed to read line from socket stream")?;
         let message = read_message(line_str)?;
-        if message.event == args[1] {
+        if message.event == target_event {
             println!("{}", message.payload);
         }
     }
